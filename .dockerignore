@@ -1,0 +1,5 @@
+# 构建上下文排除项：镜像只需要源码与 go.mod/go.sum
+.git
+.github
+*.md
+*.exe

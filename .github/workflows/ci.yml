@@ -1,0 +1,50 @@
+# CI：PR 与 main 推送都跑同一套检查
+# 只用 GitHub 托管 runner：本仓没有私有依赖，不需要 NAS 上的自建池
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # 编译 + 静态检查 + 单测（带 -race：转发器是并发服务，竞态必须在本仓就挡住）
+  test:
+    name: Build, vet and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # 从 go.mod 取版本，避免 workflow 与模块要求漂移
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -race -count=1
+
+  # 镜像可构建性：tag 发布前先证明 Dockerfile 没坏
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image without pushing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ghcr.io/${{ github.repository }}:ci

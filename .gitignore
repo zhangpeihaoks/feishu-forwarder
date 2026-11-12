@@ -1,0 +1,6 @@
+# 编译产物与本地临时文件
+feishu-forwarder
+feishu-forwarder.exe
+*.exe
+*.test
+*.out

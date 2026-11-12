@@ -1,0 +1,39 @@
+{
+  "version": "4",
+  "groupKey": "{}:{alertname=\"RedisTargetDown\"}",
+  "truncatedAlerts": 0,
+  "status": "firing",
+  "receiver": "feishu-oncall",
+  "groupLabels": {
+    "alertname": "RedisTargetDown"
+  },
+  "commonLabels": {
+    "alertname": "RedisTargetDown",
+    "severity": "critical",
+    "instance": "redis"
+  },
+  "commonAnnotations": {
+    "summary": "Redis 抓取失败（实例或 exporter 不可用）",
+    "description": "redis.infra:9121 连续 2 分钟抓取失败。业务影响：actor 定位退化为未命中，gateway 按负载重新分配，登录不受阻。"
+  },
+  "externalURL": "http://alertmanager.infra.svc.cluster.local:9093",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "RedisTargetDown",
+        "severity": "critical",
+        "instance": "redis",
+        "job": "redis"
+      },
+      "annotations": {
+        "summary": "Redis 抓取失败（实例或 exporter 不可用）",
+        "description": "redis.infra:9121 连续 2 分钟抓取失败。业务影响：actor 定位退化为未命中，gateway 按负载重新分配，登录不受阻。"
+      },
+      "startsAt": "2026-11-12T00:00:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://192.168.31.233:30093/graph?g0.expr=up%7Bjob%3D%22redis%22%7D+%3D%3D+0&g0.tab=1",
+      "fingerprint": "3f0c7a2b8d1e4f56"
+    }
+  ]
+}

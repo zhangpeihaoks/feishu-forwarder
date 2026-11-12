@@ -1,0 +1,73 @@
+# 发布：推 vX.Y.Z tag 时构建并推送镜像
+#
+# 为什么按 tag 触发而不是 push main：镜像由集群清单钉不可变 tag 消费，
+# 发布动作必须是人可控的一次事件；tag 的约定见仓库所属组织的版本规范。
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # 构建机直连 registry-1.docker.io 会超时，基础镜像统一走国内镜像前缀
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 单测是发布门禁：tag 指到编译不过的提交时应直接失败
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: go vet ./...
+
+      - run: go test ./... -race -count=1
+
+  image:
+    name: Build and push image
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 同时产出 vX.Y.Z（集群清单钉这个）与 latest（移动指针，本地开发用）
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 版本信息注入二进制，/version 与启动日志里可核对
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
