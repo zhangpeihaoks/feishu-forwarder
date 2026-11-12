@@ -28,6 +28,9 @@ FROM docker.m.daocloud.io/library/alpine:3.22
 RUN apk add --no-cache ca-certificates tzdata \
     && adduser -D -u 10001 appuser
 
+# gin 默认 debug 模式，会在每次启动打一堆路由表并警告；集群里只需要结构化日志
+ENV GIN_MODE=release
+
 WORKDIR /app
 COPY --from=build /out/feishu-forwarder /app/feishu-forwarder
 
