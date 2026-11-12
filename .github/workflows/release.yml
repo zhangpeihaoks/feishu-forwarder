@@ -8,6 +8,9 @@ on:
   push:
     tags:
       - "v*"
+  # 补发/重发用：tag 已经推了但镜像没产出（例如 tag 规则写错）时，
+  # 可以指定 ref=<tag> 重跑同一条流水线，而不是移动已推送的 tag
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,13 +54,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # 同时产出 vX.Y.Z（集群清单钉这个）与 latest（移动指针，本地开发用）
+      # 注意 pattern 必须带 v：semver 的 {{version}} 会剥掉前缀，只写 {{version}}
+      # 得到的是 0.0.1，与清单里钉的 v0.0.1 对不上（ImagePullBackOff）
       - name: Derive image tags
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
             type=raw,value=latest
 
       - name: Build and push
